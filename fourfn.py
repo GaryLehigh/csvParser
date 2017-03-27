@@ -7,6 +7,9 @@ import math
 import operator
 #from openpyxl.compat.strings import unicode
 import ChineseCharacters
+import tkinter
+import time
+from tkinter import *
 exprStack = []
 
 def pushFirst( strg, loc, toks ):
@@ -64,7 +67,9 @@ def BNF():
         div   = Literal( "/" )
         andand = Literal("&&")
         oror = Literal("||")
-        is_a = Literal("==")
+        is_a1 = Literal("==")
+        is_a2 = Literal("=")
+        is_a = is_a1 | is_a2
         less_than = Literal("<")
         bigger_than = Literal(">")
         bigger_or_equal = Literal(">=")
@@ -112,13 +117,14 @@ fn  = { "sin" : math.sin,
         "round" : round}
 compopn = {
         "==" : operator.eq,
+        "="  : operator.eq,
         "!=" : operator.ne,
         ">"  : operator.gt,
         "<"  : operator.lt,
         ">=" : operator.ge,
         "<=" : operator.le
     }
-comopnList = ["==", "!=", "<", ">", ">=", "<="]
+comopnList = ["==", "!=", "<", ">", ">=", "<=", "="]
 
 logicalopn = {
         "&&" :  andand,
@@ -144,6 +150,8 @@ class SpecificAnalyser:
         except ValueError:
             try:
                 try:
+                    #print (line)
+                    #print (self.itemNameList)
                     return float(line[self.itemNameList[s]])
                 except ValueError:
                     return line[self.itemNameList[s]]
@@ -152,30 +160,30 @@ class SpecificAnalyser:
                 return str(s)
 
     
-    def evaluateStack(self, s, line = None):
+    def evaluateStack(self, s, inconsistentItemLine, line = None):
         op = s.pop()
         #print (op)
         if op == 'unary -':
-            return -self.evaluateStack( s,line )
+            return -self.evaluateStack( s, inconsistentItemLine, line )
         if op in "+-*/^":
-            op2 = self.evaluateStack( s, line )
-            op1 = self.evaluateStack( s, line )
+            op2 = self.evaluateStack( s, inconsistentItemLine, line )
+            op1 = self.evaluateStack( s, inconsistentItemLine, line )
             return opn[op]( op1, op2 )
         elif op in comopnList:
-            op2 = self.evaluateStack( s, line )
-            op1 = self.evaluateStack( s, line )
+            op2 = self.evaluateStack( s, inconsistentItemLine, line )
+            op1 = self.evaluateStack( s, inconsistentItemLine, line )
             #print('op1 = ', op1, 'op2 = ', op2, 'operator is ', op, 'result = ',compopn[op](op1, op2 ) )
             return compopn[op](op1, op2 )
         elif op in logicalopnList:
-            op2 = self.evaluateStack( s, line )
-            op1 = self.evaluateStack( s, line )
+            op2 = self.evaluateStack( s, inconsistentItemLine, line )
+            op1 = self.evaluateStack( s, inconsistentItemLine, line )
             return logicalopn[op](op1, op2 )
         elif op == "PI":
             return math.pi # 3.1415926535
         elif op == "E":
             return math.e  # 2.718281828
         elif op in fn:
-            return fn[op]( self.evaluateStack( s, line ) )
+            return fn[op]( self.evaluateStack( s, inconsistentItemLine, line ) )
         elif op[0].isalpha():
             #print('!op is : ' + op + ' = ', self.transformToFloat( op, line ))
             return self.transformToFloat( op, line )
@@ -183,7 +191,7 @@ class SpecificAnalyser:
             #print('@op is : ' , self.transformToFloat( op, line ))
             return self.transformToFloat( op, line )
     
-    def analyzeCsv(self, pN = None):
+    def analyzeCsv(self, resultListBox, pN = None):
         i = 0
         resultNameLine = []
         resultMatrix = []
@@ -196,8 +204,10 @@ class SpecificAnalyser:
         for j in range(columnCount):
             self.itemNameList[self.reader[0][j]] = j
         #print (itemNameList)
+        inconsistentLineNumber = []
         for line in self.reader:
             exprStackTemp = self.exprStack[:]
+            resultListBox.insert(END, '' )
             #print ('line content is ', line)
             if i == 0:
                 i = i + 1
@@ -207,10 +217,43 @@ class SpecificAnalyser:
                 i = i + 1
                 resultLine = line
                 inconsistentItemLine = []
-                result = self.evaluateStack(exprStackTemp, resultLine, inconsistentItemLine)
+                result = self.evaluateStack(exprStackTemp, inconsistentItemLine, resultLine)
                 print( 'final result for line ' , i, 'is = ' , result)  
+                if (result == 0):
+                    inconsistentLineNumber.append(i)
                 resultMatrix.append(resultLine)
                 inconsistentItemMatrix.append(inconsistentItemLine) 
             else:
                 break
-        return resultNameLine, resultMatrix, inconsistentItemMatrix
+        return resultNameLine, resultMatrix, inconsistentItemMatrix, inconsistentLineNumber
+            #print ("result" , result)
+            
+if __name__ == "__main__":
+    
+    def test( s, expVal ):
+        global  exprStack
+        exprStack = []
+        results = BNF().parseString( s )
+        #print("results  =  ")
+        #print(results)
+        print("end")
+        print(exprStack)
+        reader = [['a1','a2','a3','a4'],[1,'我爱你E',3,4],[5,6,7,8],[9,10,11,12]]
+        sa = SpecificAnalyser(reader, exprStack)
+        sa.analyzeCsv()
+        
+        '''
+        val = evaluateStack(exprStack)
+        
+        if val == expVal:
+            print (s, "=", val, results, "=>", exprStack)
+        else:
+            print (s+"!!!!!", val, "!=", expVal, results, "=>", exprStack)
+    '''    
+        
+    #test( "9 + 3 / 11", 9 + 3.0 / 11 )        
+    #test( "(0 == ErrorCode)   &&     (PrbBitmap[1] >= (0xf0000000 - 1) || 0 == PrbBitmap[1] ) &&    (TB0_AckState < 4) &&    (TB1_AckState < 4) " , 2 )
+    #test( "(0 == ErrorCode)   &&     (PrbBitmap[1] > (0xf0000000 - 1) || 0 == PrbBitmap[1] ) &&    (TB0_AckState < 4) &&    (TB1_AckState < 4) " , 2 )
+    test("(a1 == 1 || a1 == 5  && ((a2 ) = 我爱你E )  && (a3 <= 3) )+ (5)", 2)
+    #a = float('4294967.0')
+    #print(operator.eq(a, 4294967))
