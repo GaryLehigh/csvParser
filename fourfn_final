@@ -295,19 +295,28 @@ class BinaryTree(object):
         self.nodePairFlag = 0
         index = 0
         print (inconsistentItemLine)
-        for str in strList:
-            if str in entireCompOpList:  
+        for string in strList:
+            if string in entireCompOpList:  
                 if (inconsistentItemLine[index] == False or inconsistentItemLine[index] == 0):
-                    self.NodeList.append(MyNode(str+'*', comOp, 0))
+                    self.NodeList.append(MyNode(string+'*', comOp, 0))
                 else:
-                    self.NodeList.append(MyNode(str, comOp, 1))
-            elif str in entireLogicalOpList:
+                    self.NodeList.append(MyNode(string, comOp, 1))
+            elif string in entireLogicalOpList:
                 if (inconsistentItemLine[index] == False or inconsistentItemLine[index] == 0):
-                    self.NodeList.append(MyNode(str+'#', logicalOp, 0))
+                    self.NodeList.append(MyNode(string+'#', logicalOp, 0))
                 else:
-                    self.NodeList.append(MyNode(str, logicalOp, 1))
+                    self.NodeList.append(MyNode(string, logicalOp, 1))
             else:
-                self.NodeList.append(MyNode(str, otherOp))
+                result = 0
+                
+                if (str(string) == str(0) or str(string) == str('False')):
+                    result = 0
+                else:
+                    result = 1
+                    print()
+                    print ('add' , string)
+                    print()
+                self.NodeList.append(MyNode(string, otherOp, result))
             index = index + 1
     def convert(self, NodeList):
         if not NodeList:
@@ -401,16 +410,20 @@ class BinaryTree(object):
             if (root.l_child.result == 0 or root.l_child.result == False) and root.l_child.type is not otherOp: 
                 self.traverseTree(root.l_child)
             elif (root.l_child.result == 0 or root.l_child.result == False) and root.l_child.type is otherOp: 
-                root.l_child.isKeyNode = isKeyNode
-                root.l_child.flag = root.nodePairFlag
-                root.l_child.data = root.l_child.data + '(' + str(root.l_child.flag)  + ')'
+                root.flag = self.nodePairFlag
+                root.l_child.data = root.l_child.data + '(' + str(root.flag)  + ')'
+                print('l', root.l_child.data, 'result = ', root.l_child.result, ' type = ', root.l_child.type )
+            else: 
+                print('l', root.l_child.data, 'result = ', root.l_child.result, ' type = ', root.l_child.type )
                 
             if (root.r_child.result == 0 or root.l_child.result == False) and root.r_child.type is not otherOp:
                 self.traverseTree(root.r_child)
             elif (root.r_child.result == 0 or root.r_child.result == False) and root.r_child.type is otherOp: 
-                root.r_child.isKeyNode = isKeyNode
-                root.r_child.flag = self.nodePairFlag
-                root.r_child.data = root.r_child.data + '(' + str(root.r_child.flag)  + ')'
+                root.flag = self.nodePairFlag
+                root.r_child.data = root.r_child.data + '(' + str(root.flag)  + ')'
+                print('r' , root.r_child.data)
+            else:
+                print ('r' , root.r_child.data)
                 
         if ( root.result == 0 or root.result == False ) and (root.type == comOp):
             #if both children are leaf node then they must be the key nodes
@@ -503,7 +516,7 @@ if __name__ == "__main__":
     #test( "9 + 3 / 11", 9 + 3.0 / 11 )        
     #test( "(0 == ErrorCode)   &&     (PrbBitmap[1] >= (0xf0000000 - 1) || 0 == PrbBitmap[1] ) &&    (TB0_AckState < 4) &&    (TB1_AckState < 4) " , 2 )
     #test( "(0 == ErrorCode)   &&     (PrbBitmap[1] > (0xf0000000 - 1) || 0 == PrbBitmap[1] ) &&    (TB0_AckState < 4) &&    (TB1_AckState < 4) " , 2 )
-    test("(a1 == 1 || a1 >= 100  && ((a2 ) = 9 )  && (a3 <= 3) ) && (6)", 2)
+    test("(a1 == 1 || a1 >= 100  && ((a2 ) = 9 )  && (a3 <= 3) ) && (0)", 2)
     #test(" ( a2 == 我爱你E )  && (6)", 2)
     #a = float('4294967.0')
     #print(operator.eq(a, 4294967))
